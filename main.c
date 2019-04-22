@@ -106,7 +106,7 @@ void doCopy(struct png *image, int Sx, int Sy, int Fx, int Fy)
       FILE *fileOut;
       fileOut = fopen("outOfProg.txt", "w");
     for(y = 0; y < lenY; y++){
-        new_row_pointers[y] = (png_byte *)malloc(4 * lenX); // выделили память под пиксели в строке
+        new_row_pointers[y] = (png_byte *)malloc(sizeof(png_byte)*4 * lenX); // выделили память под пиксели в строке
 
         png_byte *torow = new_row_pointers[y]; // начало записываемой области
         png_byte *row = image->row_pointers[Sy + y]; // начало считываемой области из файла
@@ -115,42 +115,45 @@ void doCopy(struct png *image, int Sx, int Sy, int Fx, int Fy)
             
             
             png_byte *toptr = &(torow[x*4]); // выбор пикселей
-            png_byte *ptr = &(row[(Sx+x*4)]);
+            png_byte *ptr = &(row[((Sx+x)*4)]);
 
 
-            /*toptr[0] = ptr[0];
+            toptr[0] = ptr[0];
             toptr[1] = ptr[1]; // при копировании пикселей вылетает ошибка
             toptr[2] = ptr[2];
-            toptr[3] = ptr[3];*/
+            toptr[3] = ptr[3];
 
            /* ptr[0] = 0;
             ptr[1] = 255;      // закрашивание области на картинке работает
             ptr[2] = 255;
             ptr[3] = 255;*/
 
-            toptr[0] = 0;
+            /*toptr[0] = 0;
             toptr[1] = 255;   // рисование области однотонным цветом в новом
             toptr[2] = 255;   // файле тоже работает
-            toptr[3] = 255;
+            toptr[3] = 255;*/
 
             //printf(" (x = %d y = %d)->{%ld == %ld} ", x, y, sizeof(ptr[3]), sizeof(toptr[3]));
             fprintf(fileOut, "(x = %d y = %d)->{%ld == %ld}\n", x, y, sizeof(ptr[3]), sizeof(toptr[3]));
             
         
         }
-        image->row_pointers = new_row_pointers; // запись нового массива пикселей 
-        image->width = lenX; // измнеие длины и шиирины картинки
-        image->height = lenY;
+        
 
     }
+    image->row_pointers = new_row_pointers; // запись нового массива пикселей 
+    image->width = lenX; // измнеие длины и шиирины картинки
+    image->height = lenY;
+
+
 }
 
 
 int main(){
 
 
-	int Sx = 100;
-	int Sy = 100;
+	int Sx = 500;
+	int Sy = 500;
     
     int Fx = 2000;
     int Fy = 1000;

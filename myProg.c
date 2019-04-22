@@ -3,7 +3,7 @@
 
 #include <png.h>
 
-#define FILE_NAME "test.png"
+#define FILE_NAME "spongebob.png"
 
 struct png{
 
@@ -19,7 +19,6 @@ struct png{
 
 void openPNG(struct png* image, char* fileName)
 {
-
     int x,y;
     char heder[8];
 
@@ -29,30 +28,15 @@ void openPNG(struct png* image, char* fileName)
 
     fread(heder, 1, 8, fp);
 
-    /*if (!png_sig_cmp(heder, 0, 8)){
-        printf("ok\n");
-    }*/
-    
     image->png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
-    //if(!(image->png_ptr))printf("image->png_ptr read ERROR\n");
     
     image->info_ptr = png_create_info_struct(image->png_ptr);
 
 
    png_init_io(image->png_ptr, fp);
-   /*
-    * read png_struct
-    */
 
    png_set_sig_bytes(image->png_ptr, 8);
-   /*
-    * If you had previously opened the file and read any 
-    * of the signature from the beginning in order to see 
-    * if this was a PNG file, you need to let libpng know 
-    * that there are some bytes missing from the start of 
-    * the file.
-    */
     
     png_read_info(image->png_ptr, image->info_ptr);
 
@@ -62,15 +46,10 @@ void openPNG(struct png* image, char* fileName)
     image->bit_depth = png_get_bit_depth(image->png_ptr, image->info_ptr);
     
     image->row_pointers = (png_bytep *) malloc(sizeof(png_bytep) * image->height);
-    /*
-     * количество строк
-     */
 
     for (y = 0; y < image->height; y++)
         image->row_pointers[y] = (png_byte *) malloc(png_get_rowbytes(image->png_ptr, image->info_ptr));
-    /* 
-     * выделение памяти для хранения подписи строки
-     */
+    
     png_read_image(image->png_ptr, image->row_pointers);
 
     fclose(fp);
@@ -78,7 +57,6 @@ void openPNG(struct png* image, char* fileName)
 
 void doNewFile(struct png* image, char* fileName)
 {
-
     int x, y;
 
     FILE *fp = fopen(fileName, "wb");
@@ -87,14 +65,9 @@ void doNewFile(struct png* image, char* fileName)
 
     image->png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
-
     image->info_ptr = png_create_info_struct(image->png_ptr);
 
     png_init_io(image->png_ptr, fp);
-
-
-    /* write header */
-
 
     png_set_IHDR(image->png_ptr, image->info_ptr, image->width, image->height,
                  image->bit_depth, image->color_type, PNG_INTERLACE_NONE,
@@ -102,14 +75,10 @@ void doNewFile(struct png* image, char* fileName)
 
     png_write_info(image->png_ptr, image->info_ptr);
 
-
-    /* write bytes */
-
     png_write_image(image->png_ptr, image->row_pointers);
 
     png_write_end(image->png_ptr, NULL);
 
-    /* cleanup heap allocation */
     for (y = 0; y < image->height; y++)
         free(image->row_pointers[y]);
     free(image->row_pointers);
@@ -117,7 +86,6 @@ void doNewFile(struct png* image, char* fileName)
     fclose(fp);
 
 }
-
 
 void doSquare(struct png* image, int Sx, int Sy, int Fx, int Fy)
 {
@@ -231,19 +199,18 @@ void reflect(struct png *image, int Sx, int Sy, int Fx, int Fy, int XorY)
 
 }
 
-void setPixel(struct png *image, int x, int y)
+void setPixel(struct png *image, int x, int y, char *rgb)
 {
    png_byte *row = image->row_pointers[y];
     png_byte *ptr = &(row[x*4]);
       
-    ptr[0] = 255;
-    ptr[1] = 255;
-    ptr[2] = 255;
-	ptr[3] = 255; 
+    ptr[0] = rgb[0];
+    ptr[1] = rgb[1];
+    ptr[2] = rgb[2];
+	ptr[3] = rgb[3]; 
 }
 
-
-void drawCircle(struct png* image, int Cx, int Cy, int R)
+void drawCircle(struct png* image, int Cx, int Cy, int R, char *rgb)
 {
     int x1 = 0;
     int y1 = R;
@@ -251,26 +218,26 @@ void drawCircle(struct png* image, int Cx, int Cy, int R)
     int error1 = 0;
    
     int x2 = 0;
-    int y2 = R - 80;
-    int delta2 = 1 - 2 * (R - 80);
+    int y2 = R-500;
+    int delta2 = 1 - 2 * (R-500);
     int error2 = 0;
    
     while (y1 >= 0 )
     {     
         
-        setPixel(image,Cx + x1, Cy + y1);
-        setPixel(image,Cx + x1, Cy - y1);
-        setPixel(image,Cx - x1, Cy + y1);
-        setPixel(image,Cx - x1, Cy - y1);
+        setPixel(image,Cx + x1, Cy + y1, rgb);
+        setPixel(image,Cx + x1, Cy - y1, rgb);
+        setPixel(image,Cx - x1, Cy + y1, rgb);
+        setPixel(image,Cx - x1, Cy - y1, rgb);
        
         for(int i = x2; i <= x1 ; i++)
         {
             for(int j = y2; j <= y1; j++)
             {
-                setPixel(image, Cx + i, Cy + j);
-                setPixel(image, Cx + i, Cy - j);
-                setPixel(image, Cx - i, Cy + j);
-                setPixel(image, Cx - i, Cy - j);
+                setPixel(image, Cx + i, Cy + j, rgb);
+                setPixel(image, Cx + i, Cy - j, rgb);
+                setPixel(image, Cx - i, Cy + j, rgb);
+                setPixel(image, Cx - i, Cy - j, rgb);
             }
                   
         }
@@ -315,31 +282,67 @@ void drawCircle(struct png* image, int Cx, int Cy, int R)
       
 }
 
+void doCopy(struct png *image, int Sx, int Sy, int Fx, int Fy)
+{
+    int x, y;
+    int lenX = Fx - Sx + 1;
+    int lenY = Fy - Sy + 1;
+    
+    png_bytep *new_row_pointers =(png_bytep *) malloc(sizeof(png_bytep) * lenY);
+     
+    for(y = 0; y < lenY; y++)
+    {
+        new_row_pointers[y] = (png_byte *)malloc(sizeof(png_byte)*4 * lenX); 
 
+        png_byte *torow = new_row_pointers[y]; 
+        png_byte *row = image->row_pointers[Sy + y]; 
+
+        for (x = 0; x < lenX; x++)
+        {
+            png_byte *toptr = &(torow[x*4]); 
+            png_byte *ptr = &(row[((Sx+x)*4)]);
+
+            toptr[0] = ptr[0];
+            toptr[1] = ptr[1]; 
+            toptr[2] = ptr[2];
+            toptr[3] = ptr[3];
+        }
+    }
+
+    for (y = 0; y < image->height; y++)
+        free(image->row_pointers[y]);
+    free(image->row_pointers);
+
+    image->row_pointers = new_row_pointers;
+    image->width = lenX; 
+    image->height = lenY;
+}
 
 int main(){
 
 
-	int Sx = 100;
-	int Sy = 100;
-    int Fx = 300;
-    int Fy = 300;
+	int Sx = 500;
+	int Sy = 500;
+    int Fx = 1000;
+    int Fy = 1000;
 
-    int Cx = 200;
-    int Cy = 200;
-    int R = 100;
+    char rgb[4] = {255, 254, 123, 255};
+
+    int Cx = 600;
+    int Cy = 600;
+    int R = 500;
 ;
     int XorY = 1;
     struct png image;
     int i;
     openPNG(&image, FILE_NAME);
    
-    drawCircle(&image, Cx, Cy, R);
+    drawCircle(&image, Cx, Cy, R, rgb);
 
     //doSquare(&image, Sx, Sy, Fx, Fy);
     
     //reflect(&image, Sx, Sy, Fx, Fy, XorY);
-    //doCopy(&image, Sx , Sy, Fx, Fy);
+   // doCopy(&image, Sx , Sy, Fx, Fy);
     doNewFile(&image, "newFile.png");
     
 }
