@@ -3,7 +3,7 @@
 
 #include <png.h>
 
-#define FILE_NAME "spongebob.png"
+#define FILE_NAME "test.png"
 
 struct png{
 
@@ -118,30 +118,6 @@ void doNewFile(struct png* image, char* fileName)
 
 }
 
-void process_file(struct png *image) {
-    int x,y;
-
-    for (y = 0; y < image->height; y++) {
-        png_byte *row = image->row_pointers[y];
-        for (x = 0; x < image->width; x++) {
-            png_byte *ptr = &(row[x * 4]);
-
-            
-            /*printf("Pixel at position [ %d - %d ] has RGBA values: %d - %d - %d - %d\n",
-                   x, y, ptr[0], ptr[1], ptr[2], ptr[3]);
-
-            /* set red value to 0 and green value to the blue one */
-
-            if((x*x + y*y) < 100000){
-                
-                ptr[0] = 1;
-                ptr[1] = 1;
-                ptr[3] = 1;
-            }
-            
-        }
-    }
-}
 
 void doSquare(struct png* image, int Sx, int Sy, int Fx, int Fy)
 {
@@ -195,7 +171,8 @@ void doSquare(struct png* image, int Sx, int Sy, int Fx, int Fy)
     
 }
 
-void swapPixels(png_byte *ptr1, png_byte *ptr2){
+void swapPixels(png_byte *ptr1, png_byte *ptr2)
+{
     int buf[4];
 
     buf[0] = ptr2[0];
@@ -254,7 +231,8 @@ void reflect(struct png *image, int Sx, int Sy, int Fx, int Fy, int XorY)
 
 }
 
-void setPixel(struct png *image, int x, int y){
+void setPixel(struct png *image, int x, int y)
+{
    png_byte *row = image->row_pointers[y];
     png_byte *ptr = &(row[x*4]);
       
@@ -265,83 +243,76 @@ void setPixel(struct png *image, int x, int y){
 }
 
 
-void drawCircle(struct png* image, int Cx, int Cy, int R){
-
-    
-    int x,y;
-    printf("R = %d\n", R);
-
-    for(y = 0; y <= Cy + R; y++){
+void drawCircle(struct png* image, int Cx, int Cy, int R)
+{
+    int x1 = 0;
+    int y1 = R;
+    int delta1 = 1 - 2 * R;
+    int error1 = 0;
+   
+    int x2 = 0;
+    int y2 = R - 80;
+    int delta2 = 1 - 2 * (R - 80);
+    int error2 = 0;
+   
+    while (y1 >= 0 )
+    {     
         
-        
-        for(x = 0; x <= Cx + R; x++){          
-            
-            
+        setPixel(image,Cx + x1, Cy + y1);
+        setPixel(image,Cx + x1, Cy - y1);
+        setPixel(image,Cx - x1, Cy + y1);
+        setPixel(image,Cx - x1, Cy - y1);
+       
+        for(int i = x2; i <= x1 ; i++)
+        {
+            for(int j = y2; j <= y1; j++)
+            {
+                setPixel(image, Cx + i, Cy + j);
+                setPixel(image, Cx + i, Cy - j);
+                setPixel(image, Cx - i, Cy + j);
+                setPixel(image, Cx - i, Cy - j);
+            }
+                  
+        }
+       
+        error1 = 2 * (delta1 + y1) - 1;
+       
+        if ((delta1 < 0) && (error1 <= 0))
+        {
+            delta1 += 2 * ++x1 + 1;
+            goto next;
+        }
+       
+        if ((delta1 > 0) && (error1 > 0))
+        {
+            delta1 -= 2 * --y1 + 1;
+            goto next;
+        }
+       
+        delta1 += 2 * (++x1 - y1--);
 
-            if(x*x + y*y <= R*R){
-               // printf("ok ");
-                setPixel(image, Cx + x, Cy + y);
-                setPixel(image, Cx - x, Cy - y);
-                setPixel(image, Cx + x, Cy - y);
-                setPixel(image, Cx - x, Cy + y);
+        next:
+            
+        if( y2 >= 0){
+            error2 = 2 * (delta2 + y2) - 1;
+       
+            if ((delta2 < 0) && (error2 <= 0)){
+                delta2 += 2 * ++x2 + 1;
+                continue;
+            }
+       
+            if ((delta2 > 0) && (error2 > 0))
+            {
+                delta2 -= 2 * --y2 + 1;
+                continue;
             }
 
+            delta2 += 2 * (++x2 - y2--);
 
         }
+
     }
-
-
-
-}
-
-void doCircle(struct png *image, int x, int y, int r){
-
-    int x1,y1,yk = 0;
-    int sigma,delta,f;
-
-    x1 = 0;
-    y1 = r;
-    delta = 2*(1-r);
-
-        do
-        {
-            setPixel(image,x+x1,y+y1);
-            setPixel(image,x-x1,y+y1);
-            setPixel(image,x+x1,y-y1);
-            setPixel(image,x-x1,y-y1);
-
-            f = 0;
-            if (y1 < yk)
-                break;
-            if (delta < 0)
-            {
-                        sigma = 2*(delta+y1)-1;
-                        if (sigma <= 0)
-                        {
-                                x1++;
-                                delta += 2*x1+1;
-                                f = 1;
-                        }
-                }
-                else
-                if (delta > 0)
-                {
-                        sigma = 2*(delta-x1)-1;
-                        if (sigma > 0)
-                        {
-                                y1--;
-                                delta += 1-2*y1;
-                                f = 1;
-                        }
-                }
-                if (!f)
-                {
-                        x1++;
-                        y1--;
-                        delta += 2*(x1-y1-1);
-                }
-        }
-        while(1);
+      
 }
 
 
@@ -349,29 +320,21 @@ void doCircle(struct png *image, int x, int y, int r){
 int main(){
 
 
-	int Sx = 400;
-	int Sy = 400;
-    int Fx = 600;
-    int Fy = 600;
+	int Sx = 100;
+	int Sy = 100;
+    int Fx = 300;
+    int Fy = 300;
 
-    int Cx = 500;
-    int Cy = 500;
+    int Cx = 200;
+    int Cy = 200;
     int R = 100;
 ;
     int XorY = 1;
     struct png image;
     int i;
     openPNG(&image, FILE_NAME);
-    //process_file(&image);
-	
-    
-    
    
-        
-    doCircle(&image, Cx, Cy, R);
-    doCircle(&image, Cx, Cy, R-1);
-    doCircle(&image, Cx, Cy, R-2);
-    doCircle(&image, Cx, Cy, R-3);
+    drawCircle(&image, Cx, Cy, R);
 
     //doSquare(&image, Sx, Sy, Fx, Fy);
     
