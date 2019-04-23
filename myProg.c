@@ -2,6 +2,8 @@
 #include <stdlib.h>
 
 #include <png.h>
+#include <unistd.h>
+#include <getopt.h>
 
 #define FILE_NAME "spongebob.png"
 
@@ -16,6 +18,13 @@ struct png{
     int number_of_passes;
     png_bytep *row_pointers;
 };
+
+struct myArgs{
+    int isReflect;
+    int start[2];
+    int end[2];
+};
+
 
 void openPNG(struct png* image, char* fileName)
 {
@@ -318,7 +327,7 @@ void doCopy(struct png *image, int Sx, int Sy, int Fx, int Fy)
     image->height = lenY;
 }
 
-int main(){
+int main(int argc, char **argv){
 
 
 	int Sx = 500;
@@ -330,17 +339,68 @@ int main(){
 
     int Cx = 600;
     int Cy = 600;
-    int R = 500;
-;
+    int R = 10;
+
     int XorY = 1;
     struct png image;
     int i;
-    openPNG(&image, FILE_NAME);
-   
-    drawCircle(&image, Cx, Cy, R, rgb);
 
-    //doSquare(&image, Sx, Sy, Fx, Fy);
+    struct myArgs a;
+    int longIndex = 0;
+    int opt = 0;
+    a.isReflect = 0;
+    a.start[0] = 0;
+    a.start[1] = 0;
+    a.end[0] = 0;
+    a.end[1] = 0;
     
+
+    char *optstring = "rS:S:E:E:";
+    
+    struct option longOpts[] = {
+        {"reflect", no_argument, NULL, 'r'},
+        {"start", required_argument, NULL, 'S'},
+        {"end", required_argument, NULL, 'E'}
+    };
+   
+    
+    
+    opt = getopt_long(argc, argv, optstring , longOpts, &longIndex);
+
+    while( opt != -1 ) {
+        switch( opt ) {
+            case 'r':
+                
+                break;
+                 
+   
+            default:
+                /* сюда попасть невозможно. */
+                break;
+        }
+         printf("%s ", optarg);
+        opt = getopt_long(argc, argv, optstring , longOpts, &longIndex);
+        
+    }
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    openPNG(&image, FILE_NAME);
+    drawCircle(&image, Cx, Cy, R, rgb);
+    //doSquare(&image, Sx, Sy, Fx, Fy);  
     //reflect(&image, Sx, Sy, Fx, Fy, XorY);
    // doCopy(&image, Sx , Sy, Fx, Fy);
     doNewFile(&image, "newFile.png");
