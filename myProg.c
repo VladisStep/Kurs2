@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <png.h>
 #include <unistd.h>
@@ -19,10 +20,12 @@ struct png{
     png_bytep *row_pointers;
 };
 
-struct myArgs{
+struct args{
     int isReflect;
     int start[2];
     int end[2];
+    int R;
+    int Os;
 };
 
 
@@ -330,79 +333,109 @@ void doCopy(struct png *image, int Sx, int Sy, int Fx, int Fy)
 int main(int argc, char **argv){
 
 
-	int Sx = 500;
-	int Sy = 500;
-    int Fx = 1000;
-    int Fy = 1000;
-
-    char rgb[4] = {255, 254, 123, 255};
-
-    int Cx = 600;
-    int Cy = 600;
-    int R = 10;
-
-    int XorY = 1;
+	
+    int flag= 0;
     struct png image;
     int i;
 
-    struct myArgs a;
+    struct args a;
     int longIndex = 0;
     int opt = 0;
-    a.isReflect = 0;
-    a.start[0] = 0;
-    a.start[1] = 0;
-    a.end[0] = 0;
-    a.end[1] = 0;
     
+    a.start[0] = -1;
+    a.start[1] = -1;
+    a.end[0] = -1;
+    a.end[1] = -1;
+    a.R = 0;
+    a.Os = 0;
 
-    char *optstring = "rS:S:E:E:";
+    char *optstring = "rE:S:R:C:O:";
     
     struct option longOpts[] = {
-        {"reflect", no_argument, NULL, 'r'},
-        {"start", required_argument, NULL, 'S'},
-        {"end", required_argument, NULL, 'E'}
+        {"reflect", no_argument, &flag, 'r'},
+        {"start", required_argument, NULL, 'S'}, 
+        {"end", required_argument, NULL, 'E'},
+        {"color", required_argument, NULL, 'C'},
+        {"os", required_argument, NULL, 'O'},
+        {"radius", required_argument, NULL, 'R'}
     };
    
     
     
     opt = getopt_long(argc, argv, optstring , longOpts, &longIndex);
-
+    i = optind;
     while( opt != -1 ) {
         switch( opt ) {
-            case 'r':
+            case 'E':
+                
+                a.end[0] = atoi(optarg);
+                a.end[1] = atoi(argv[optind]);
+                
                 
                 break;
-                 
+            
+            case 'S':
+              
+                a.start[0] = atoi(optarg);
+                a.start[1] = atoi(argv[optind]);
+                printf("%d\n", a.start[1]);
+                break;
+            case 'R':
+                
+                printf("R = %s\n", optarg);
+
+                break;
+
+            case 'C':
+                
+                printf("C = %s\n", optarg);
+
+                break;
+
+            case 'O':
+                
+                
+                a.Os = 121 - *optarg;
+                break;
    
             default:
                 /* сюда попасть невозможно. */
                 break;
         }
-         printf("%s ", optarg);
+        
+        
         opt = getopt_long(argc, argv, optstring , longOpts, &longIndex);
         
     }
     
 
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
     openPNG(&image, FILE_NAME);
-    drawCircle(&image, Cx, Cy, R, rgb);
+
+    switch(flag){
+        case'r':
+
+            if(a.start[0] < 0 || a.start[1] < 0 || 
+               a.end[0] > image.width || a.end[1] > (image.height - 1) ||
+               a.start[0] >= a.end[0] || a.start[1] >= a.end[1] )
+               {
+                   printf("ERROR\n");
+                   break;
+               }
+            else
+            {
+                reflect(&image, a.start[0], a.start[1], a.end[0], a.end[1], a.Os);
+            }
+            
+        break;
+    }
+
+
+    
+    //drawCircle(&image, Cx, Cy, R, rgb);
     //doSquare(&image, Sx, Sy, Fx, Fy);  
-    //reflect(&image, Sx, Sy, Fx, Fy, XorY);
+    
    // doCopy(&image, Sx , Sy, Fx, Fy);
-    doNewFile(&image, "newFile.png");
+  
+    doNewFile(&image, argv[argc - 1]);
     
 }
