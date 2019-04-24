@@ -1,17 +1,10 @@
-int x := 0
-   int y := R
-   int delta := 1 - 2 * R
-   int error := 0
-   while (y >= 0)
-       drawpixel(X1 + x, Y1 + y)
-       drawpixel(X1 + x, Y1 - y)
-       drawpixel(X1 - x, Y1 + y)
-       drawpixel(X1 - x, Y1 - y)
-       error = 2 * (delta + y) - 1
-       if ((delta < 0) && (error <= 0))
-           delta += 2 * ++x + 1
-           continue
-       if ((delta > 0) && (error > 0))
-           delta -= 2 * --y + 1
-           continue
-       delta += 2 * (++x - y--)
+{"reflect", no_argument, &flag, 'r'},
+        {"copy", no_argument, &flag, 'c'},
+        {"draw_circle", no_argument, &flag, 'd'},
+        {"help", required_argument, NULL, 'h'},
+        {"start", required_argument, NULL, 'S'}, 
+        {"end", required_argument, NULL, 'E'},
+        {"color", required_argument, NULL, 'C'},
+        {"os", required_argument, NULL, 'O'},
+        {"width", required_argument, NULL, 'w'},
+        {"radius", required_argument, NULL, 'R'}

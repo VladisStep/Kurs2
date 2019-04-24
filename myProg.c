@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <png.h>
 #include <unistd.h>
 #include <getopt.h>
 
-#define FILE_NAME "spongebob.png"
 
 struct png{
 
@@ -20,6 +20,7 @@ struct png{
     png_bytep *row_pointers;
 };
 
+
 struct args{
     int isReflect;
     int start[2];
@@ -31,14 +32,17 @@ struct args{
 };
 
 
-void openPNG(struct png* image, char* fileName)
+int openPNG(struct png* image, char* fileName)
 {
     int x,y;
     char heder[8];
 
     FILE *fp = fopen(fileName, "rb");
 
-    if(!fp) printf("file is not opend\n");
+    if(!fp) 
+    {
+        return 1;
+    }
 
     fread(heder, 1, 8, fp);
 
@@ -67,7 +71,9 @@ void openPNG(struct png* image, char* fileName)
     png_read_image(image->png_ptr, image->row_pointers);
 
     fclose(fp);
+    return 0;
 }
+
 
 void doNewFile(struct png* image, char* fileName)
 {
@@ -100,6 +106,7 @@ void doNewFile(struct png* image, char* fileName)
     fclose(fp);
 
 }
+
 
 void doSquare(struct png* image, int Sx, int Sy, int Fx, int Fy)
 {
@@ -153,6 +160,7 @@ void doSquare(struct png* image, int Sx, int Sy, int Fx, int Fy)
     
 }
 
+
 void swapPixels(png_byte *ptr1, png_byte *ptr2)
 {
     int buf[4];
@@ -173,6 +181,7 @@ void swapPixels(png_byte *ptr1, png_byte *ptr2)
     ptr1[3] = buf[3];
 
 }
+
 
 void reflect(struct png *image, int Sx, int Sy, int Fx, int Fy, int XorY)
 {
@@ -213,6 +222,7 @@ void reflect(struct png *image, int Sx, int Sy, int Fx, int Fy, int XorY)
 
 }
 
+
 void setPixel(struct png *image, int x, int y, char *rgb)
 {
    png_byte *row = image->row_pointers[y];
@@ -223,6 +233,7 @@ void setPixel(struct png *image, int x, int y, char *rgb)
     ptr[2] = rgb[2];
 	ptr[3] = rgb[3]; 
 }
+
 
 void drawCircle(struct png* image, int Sx, int Sy, int R, int width, png_byte *rgb)
 {
@@ -246,6 +257,46 @@ void drawCircle(struct png* image, int Sx, int Sy, int R, int width, png_byte *r
     } 
     
 }
+
+
+void printHelp()
+{
+    printf("Справка\n");
+    printf("--copy(-c) - делает копию заданного участка. Участок задается при помощи -S и -E.\n");
+    printf("(Пример) --copy -S 100 200 -E 500 600 fileOut.png\n");
+    printf("--reflect(-r) - отображает выбранный участок относительно оси. Участок задается при помощи -S и -E, ось задется при попщи -O\n");
+    printf("(Пример) --reflect -S 100 200 -E 500 700 -O x fileOut.png\n");
+    printf("--draw_circle(-d) - рисует окружность вписанную в квадарат. Квадарт задается при помощи координат левого верхнего угла -S и  радиуса окружности -R ");
+    printf("*расчет координат правого нижнего угла делается автомотически*, так же выберается ширина окружности -W *если окружно должны быть залита, то параметры -W и -R должны совпадать* ");
+    printf("цвет окржуносит можно выбрать при помощи -С.\n");
+    printf("(Пример) --draw_circle -S 500 500 -R 100 -W 10 -C red fileOut.png");
+    printf("--start(-S) - считывет координаты *целый числа* верхнего левого угла прямоугольной области (-С 32 23)\n");
+    printf("--end(-E) - считывет координаты *целый числа* нижнего правого угла прямоугольной области (-E 32 23)\n");
+    printf("--color(-C) - считывет цвет. Доступные цвета: red, green, blue, white, black*стоит по умолчанию*(-С red)\n");
+    printf("--os(-O) - считывает ось x или ось y (-O x)\n");
+    printf("--width(-W) - считывает значение ширины (-W 10)\n");
+    printf("--radius(-R) - считывает заначение радиуса (-R 100)\n");
+    printf("--info(-i) - выводит информацию о входном файле\n");
+    printf("Строка команд должна заканчиваться названием файла вывода\n");
+
+}
+
+
+int isNum(char *n)
+{
+    int i;
+
+    for(i = 0; i < strlen(n); i++)
+    {
+        if(isdigit(n[i]))
+            continue;
+        else 
+            return 0;
+    }
+
+    return 1;
+}
+
 
 void doCopy(struct png *image, int Sx, int Sy, int Fx, int Fy)
 {
@@ -283,11 +334,10 @@ void doCopy(struct png *image, int Sx, int Sy, int Fx, int Fy)
     image->height = lenY;
 }
 
+
 int main(int argc, char **argv){
 
-
-	
-    int flag= 0;
+    int flag = 0;
     struct png image;
     int i;
 
@@ -299,61 +349,104 @@ int main(int argc, char **argv){
     a.start[1] = -1;
     a.end[0] = -1;
     a.end[1] = -1;
-    a.R = 0;
+    a.R = -1;
     a.Os = 0;
-    a.width = 0;
+    a.width = 1;
 
     a.color[0] = 0;
     a.color[1] = 0;
     a.color[2] = 0;
     a.color[3] = 255;
 
-    char *optstring = "drE:S:R:C:O:W:";
+    char *optstring = "drcE:S:R:C:O:W:ih";
+
+    if(openPNG(&image, argv[1]) || !strstr(argv[1], ".png"))
+    {
+        printf("Невозможно открыть файл\n");
+        return 0;
+    }
     
     struct option longOpts[] = {
         {"reflect", no_argument, &flag, 'r'},
         {"copy", no_argument, &flag, 'c'},
         {"draw_circle", no_argument, &flag, 'd'},
+        {"help", required_argument, &flag, 'h'},
         {"start", required_argument, NULL, 'S'}, 
         {"end", required_argument, NULL, 'E'},
         {"color", required_argument, NULL, 'C'},
         {"os", required_argument, NULL, 'O'},
-        {"width", required_argument, NULL, 'w'},
-        {"radius", required_argument, NULL, 'R'}
+        {"width", required_argument, NULL, 'W'},
+        {"radius", required_argument, NULL, 'R'},
+        {"info", required_argument, &flag, 'i'},
+        {NULL, 0, NULL, 0}
     };
-   
-    
-    
+
     opt = getopt_long(argc, argv, optstring , longOpts, &longIndex);
-    i = optind;
+    
     while( opt != -1 ) {
         switch( opt ) {
             case 'E':
                 
+                if(!isNum(optarg))
+                {
+                    printf("%s - это не целое число\n", optarg);
+                    return 0;
+                }
+                
+                if(!isNum(argv[optind]))
+                {
+                    printf("%s - это не целое число\n", argv[optind]);
+                    return 0;
+                }
+
                 a.end[0] = atoi(optarg);
                 a.end[1] = atoi(argv[optind]);
-                
-                
+ 
                 break;
             
             case 'S':
+
+                if(!isNum(optarg))
+                {
+                    printf("%s - это не целое число\n", optarg);
+                    return 0;
+                }
+                if(!isNum(argv[optind]))
+                {
+                    printf("%s - это не целое число\n", argv[optind]);
+                    return 0;
+                }
               
                 a.start[0] = atoi(optarg);
                 a.start[1] = atoi(argv[optind]);
 ;
                 break;
+
             case 'R':
                 
+                if(!isNum(optarg))
+                {
+                    printf("%s - это не целое число\n", optarg);
+                    return 0;
+                }
+               
                 a.R = atoi(optarg);
+                
                 break;
             
             case 'W':
                 
+                if(!isNum(optarg))
+                {
+                    printf("%s - это не целое число\n", optarg);
+                    return 0;
+                }
+                
                 a.width = atoi(optarg);
+                
                 break;
 
             case 'C':
-                
                 
                 if(!strcmp("red", optarg))
                 {
@@ -373,35 +466,65 @@ int main(int argc, char **argv){
                     a.color[1] = 255;
                     a.color[2] = 255;
                 }
+                else if(!strcmp("black", optarg))
+                {
+
+                }
+                else
+                {
+                    printf("Цвета %s  не существует",  optarg);
+                }
                 break;
 
             case 'O':
+
+                if(!strcmp("x", optarg) || !strcmp("y", optarg))
+                {
+                    a.Os =  121 - *optarg;
+                }
+                else
+                {
+                    printf("Не верная ось координат\n");
+                }
                 
-                
-                a.Os = 121 - *optarg;
                 break;
-   
-            default:
-                /* сюда попасть невозможно. */
+            
+            case 'h':
+                printHelp();
+                break;
+                
+            case 'i':
+                flag = 'i';
+                break;
+
+            case 'r':
+                flag = 'r';
+                break;
+            
+            case 'c':
+                flag = 'c';
+                break;
+            
+            case 'd':
+                flag = 'd';
                 break;
         }
-        
-        
+           
         opt = getopt_long(argc, argv, optstring , longOpts, &longIndex);
         
     }
-    
-
-    openPNG(&image, FILE_NAME);
 
     switch(flag){
         case'r':
 
-            if(a.start[0] < 0 || a.start[1] < 0 || 
-               a.end[0] > image.width || a.end[1] > (image.height - 1) ||
-               a.start[0] >= a.end[0] || a.start[1] >= a.end[1] )
+            if(a.start[0] < 0 || 
+               a.start[1] < 0 || 
+               a.end[0] > image.width || 
+               a.end[1] > (image.height - 1) ||
+               a.start[0] >= a.end[0] || 
+               a.start[1] >= a.end[1] )
                {
-                   printf("ERRORr\n");
+                   printf("Область отражениея не является корректной\n");
                    break;
                }
             else
@@ -413,11 +536,14 @@ int main(int argc, char **argv){
 
         case'c':
 
-            if(a.start[0] < 0 || a.start[1] < 0 || 
-               a.end[0] > image.width || a.end[1] > (image.height - 1) ||
-               a.start[0] >= a.end[0] || a.start[1] >= a.end[1] )
+            if(a.start[0] < 0 || 
+               a.start[1] < 0 || 
+               a.end[0] > image.width || 
+               a.end[1] > (image.height - 1) ||
+               a.start[0] > a.end[0] || 
+               a.start[1] > a.end[1])
                {
-                   printf("ERRORc\n");
+                   printf("Область копирования не является корректной\n");
                    break;
                }
             else
@@ -429,32 +555,36 @@ int main(int argc, char **argv){
 
         case'd':
 
-            if(a.start[0] < 0/* || 
-               //a.start[1] < 0 || 
-               //a.end[0] + a.R > image.width || 
-              // a.end[1] + a.R > (image.height - 1)||
-               //a.end[0] - a.R < image.width || 
-                a.end[1] - a.R < (image.height - 1)*/)
+            if(a.start[0] < 0 || 
+               a.start[1] < 0 || 
+               a.start[0] + a.R > image.width || 
+               a.start[1] + a.R > (image.height - 1)||
+               a.start[0] - a.R < 0 ||
+               a.start[1] - a.R < 0 ||
+               a.R <= 0 ||
+               a.width > a.R ||
+               a.width < 0)
                {
-                   printf("ERRORd\n");
+                   printf("Невозможно нарисовать круг по введенным данным\n");
                    break;
                }
             else
             {
-                printf("ok\n");
                 drawCircle(&image,a.start[0], a.start[1], a.R, a.width, a.color);
             }
             
         break;
+
+        case 'h':
+            printHelp();
+        break;
+
+        case 'i':
+            printf("Width = %d\n", image.width);
+            printf("Heigth = %d\n", image.height);
+        break;
     }
-
-
-    
-    //drawCircle(&image, Cx, Cy, R, rgb);
-    //doSquare(&image, Sx, Sy, Fx, Fy);  
-    
-   
   
     doNewFile(&image, argv[argc - 1]);
-    
+
 }
