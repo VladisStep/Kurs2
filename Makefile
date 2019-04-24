@@ -1,2 +1,2 @@
 all:
-	gcc myProg.c -lpng && ./a.out --reflect -S 50 -E 600 500 -O y newFile.png
+	gcc myProg.c -lpng && ./a.out --draw_circle -S 500 500 -R 100 -W 10 -C red newFile.png

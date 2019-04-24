@@ -26,6 +26,8 @@ struct args{
     int end[2];
     int R;
     int Os;
+    int width;
+    png_byte color[4];
 };
 
 
@@ -222,29 +224,37 @@ void setPixel(struct png *image, int x, int y, char *rgb)
 	ptr[3] = rgb[3]; 
 }
 
-void drawCircle(struct png* image, int Cx, int Cy, int R, char *rgb)
+void drawCircle(struct png* image, int Cx, int Cy, int R, int width, png_byte *rgb)
 {
     int x1 = 0;
     int y1 = R;
     int delta1 = 1 - 2 * R;
     int error1 = 0;
    
+    width = (width%2 == 0?width:width-1);
+    printf("%d\n", width);
     int x2 = 0;
-    int y2 = R-500;
-    int delta2 = 1 - 2 * (R-500);
+    int y2 = R-width;
+    int delta2 = 1 - 2 * (R - width);
     int error2 = 0;
+    
+    
    
-    while (y1 >= 0 )
-    {     
-        
+    while (y1 >= 0)
+    {         
         setPixel(image,Cx + x1, Cy + y1, rgb);
         setPixel(image,Cx + x1, Cy - y1, rgb);
         setPixel(image,Cx - x1, Cy + y1, rgb);
         setPixel(image,Cx - x1, Cy - y1, rgb);
+
+        setPixel(image,Cx + x2, Cy + y2, rgb);
+        setPixel(image,Cx + x2, Cy - y2, rgb);
+        setPixel(image,Cx - x2, Cy + y2, rgb);
+        setPixel(image,Cx - x2, Cy - y2, rgb);
        
-        for(int i = x2; i <= x1 ; i++)
+        for(int i = x1; i >= x2; i--)
         {
-            for(int j = y2; j <= y1; j++)
+            for(int j = y1; j >= y2; j--)
             {
                 setPixel(image, Cx + i, Cy + j, rgb);
                 setPixel(image, Cx + i, Cy - j, rgb);
@@ -271,6 +281,8 @@ void drawCircle(struct png* image, int Cx, int Cy, int R, char *rgb)
         delta1 += 2 * (++x1 - y1--);
 
         next:
+
+        
             
         if( y2 >= 0){
             error2 = 2 * (delta2 + y2) - 1;
@@ -348,15 +360,24 @@ int main(int argc, char **argv){
     a.end[1] = -1;
     a.R = 0;
     a.Os = 0;
+    a.width = 0;
 
-    char *optstring = "rE:S:R:C:O:";
+    a.color[0] = 0;
+    a.color[1] = 0;
+    a.color[2] = 0;
+    a.color[3] = 255;
+
+    char *optstring = "drE:S:R:C:O:W:";
     
     struct option longOpts[] = {
         {"reflect", no_argument, &flag, 'r'},
+        {"copy", no_argument, &flag, 'c'},
+        {"draw_circle", no_argument, &flag, 'd'},
         {"start", required_argument, NULL, 'S'}, 
         {"end", required_argument, NULL, 'E'},
         {"color", required_argument, NULL, 'C'},
         {"os", required_argument, NULL, 'O'},
+        {"width", required_argument, NULL, 'w'},
         {"radius", required_argument, NULL, 'R'}
     };
    
@@ -378,18 +399,39 @@ int main(int argc, char **argv){
               
                 a.start[0] = atoi(optarg);
                 a.start[1] = atoi(argv[optind]);
-                printf("%d\n", a.start[1]);
+;
                 break;
             case 'R':
                 
-                printf("R = %s\n", optarg);
-
+                a.R = atoi(optarg);
+                break;
+            
+            case 'W':
+                
+                a.width = atoi(optarg);
                 break;
 
             case 'C':
                 
-                printf("C = %s\n", optarg);
-
+                
+                if(!strcmp("red", optarg))
+                {
+                    a.color[0] = 255;
+                }
+                else if(!strcmp("green", optarg))
+                {
+                    a.color[1] = 255;
+                }
+                else if(!strcmp("blue", optarg))
+                {
+                    a.color[3] = 255;
+                }
+                else if(!strcmp("white", optarg))
+                {
+                    a.color[0] = 255;
+                    a.color[1] = 255;
+                    a.color[2] = 255;
+                }
                 break;
 
             case 'O':
@@ -418,12 +460,48 @@ int main(int argc, char **argv){
                a.end[0] > image.width || a.end[1] > (image.height - 1) ||
                a.start[0] >= a.end[0] || a.start[1] >= a.end[1] )
                {
-                   printf("ERROR\n");
+                   printf("ERRORr\n");
                    break;
                }
             else
             {
                 reflect(&image, a.start[0], a.start[1], a.end[0], a.end[1], a.Os);
+            }
+            
+        break;
+
+        case'c':
+
+            if(a.start[0] < 0 || a.start[1] < 0 || 
+               a.end[0] > image.width || a.end[1] > (image.height - 1) ||
+               a.start[0] >= a.end[0] || a.start[1] >= a.end[1] )
+               {
+                   printf("ERRORc\n");
+                   break;
+               }
+            else
+            {
+                doCopy(&image, a.start[0], a.start[1], a.end[0], a.end[1]);
+            }
+            
+        break;
+
+        case'd':
+
+            if(a.start[0] < 0/* || 
+               //a.start[1] < 0 || 
+               //a.end[0] + a.R > image.width || 
+              // a.end[1] + a.R > (image.height - 1)||
+               //a.end[0] - a.R < image.width || 
+                a.end[1] - a.R < (image.height - 1)*/)
+               {
+                   printf("ERRORd\n");
+                   break;
+               }
+            else
+            {
+                printf("ok\n");
+                drawCircle(&image,a.start[0], a.start[1], a.R, a.width, a.color);
             }
             
         break;
@@ -434,7 +512,7 @@ int main(int argc, char **argv){
     //drawCircle(&image, Cx, Cy, R, rgb);
     //doSquare(&image, Sx, Sy, Fx, Fy);  
     
-   // doCopy(&image, Sx , Sy, Fx, Fy);
+   
   
     doNewFile(&image, argv[argc - 1]);
     
