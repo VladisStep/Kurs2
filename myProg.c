@@ -6,6 +6,7 @@
 #include <png.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <time.h>
 
 
 struct png{
@@ -334,6 +335,54 @@ void doCopy(struct png *image, int Sx, int Sy, int Fx, int Fy)
     image->height = lenY;
 }
 
+void randSquare(struct png* image, int N){
+	srand(time(NULL));
+	int maxA;
+	
+	if( image->width >= image->height)
+		maxA = image->width;
+	else
+		maxA = image->height;
+		
+	
+	int x, y, a;
+	int i = 0;
+	png_byte color[4];
+
+	while(i < N){
+	 	x = rand() %image->width;
+		y = rand() %image->height;
+		a = rand() %maxA;
+		
+
+
+		if(x + a < image->width &&
+			y + a < image->height){
+			color[0] = rand()%255; 
+			color[1] = rand()%255;
+			color[2] = rand()%255;
+			color[3] = 255;
+	
+			for(int j = 0; j < a; j++){
+				for( int k = 0; k < a; k++){
+				setPixel(image, x+j , y+k, color);
+					}
+			}	
+
+		i++;
+		}
+	
+
+
+	
+	} 
+	
+	
+	
+
+
+}
+
 
 int main(int argc, char **argv){
 
@@ -358,7 +407,7 @@ int main(int argc, char **argv){
     a.color[2] = 0;
     a.color[3] = 255;
 
-    char *optstring = "drcE:S:R:C:O:W:ih";
+    char *optstring = "drcsE:S:R:C:O:W:ih";
 
     if(openPNG(&image, argv[1]) || !strstr(argv[1], ".png"))
     {
@@ -378,6 +427,7 @@ int main(int argc, char **argv){
         {"width", required_argument, NULL, 'W'},
         {"radius", required_argument, NULL, 'R'},
         {"info", required_argument, &flag, 'i'},
+		{"randSquare", no_argument, &flag, 's'},
         {NULL, 0, NULL, 0}
     };
 
@@ -508,6 +558,10 @@ int main(int argc, char **argv){
             case 'd':
                 flag = 'd';
                 break;
+			
+			case 's':
+                flag = 's';
+                break;
         }
            
         opt = getopt_long(argc, argv, optstring , longOpts, &longIndex);
@@ -583,7 +637,12 @@ int main(int argc, char **argv){
             printf("Width = %d\n", image.width);
             printf("Heigth = %d\n", image.height);
         break;
+		
+		case 's':
+            randSquare(&image, a.R);
+        break;
     }
+	
   
     doNewFile(&image, argv[argc - 1]);
 

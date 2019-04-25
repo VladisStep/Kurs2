@@ -1,2 +1,2 @@
 all:
-	gcc myProg.c -lpng && ./a.out test.png -i newFile.png
+	gcc myProg.c -lpng && ./a.out spongebob.png -s -R 1024 newFile.png
